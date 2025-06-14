@@ -1,4 +1,3 @@
-
 import streamlit as st
 import sqlite3
 import json
@@ -6,14 +5,25 @@ import json
 st.set_page_config(page_title="词典查询", page_icon="📚", layout="wide")
 st.title("📖 英语词典查询工具")
 
-# 用户输入
-word = st.text_input("请输入要查询的单词：")
+# 从数据库读取所有单词（用于下拉自动联想）
+@st.cache_data
+def load_word_list():
+    conn = sqlite3.connect("output.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT word FROM dictionary ORDER BY word")
+    rows = cursor.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
 
-# 查询数据库
+# 词汇联想下拉框
+all_words = load_word_list()
+word = st.selectbox("请输入或选择单词（支持自动联想）", all_words)
+
+# 查询函数
 def query_word(w):
     conn = sqlite3.connect("output.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM dictionary WHERE word LIKE ?", (w,))
+    cursor.execute("SELECT * FROM dictionary WHERE word = ?", (w,))
     row = cursor.fetchone()
     conn.close()
     return row
@@ -48,10 +58,10 @@ if word:
             examples_en_list = json.loads(examples_en)
             examples_zh_list = json.loads(examples_zh)
             for en, zh in zip(examples_en_list, examples_zh_list):
-                st.markdown(f"- {en}  \n 👉 {zh}")
+                st.markdown(f"- {en}  \n　👉 {zh}")
         except:
             st.markdown("例句格式错误")
     else:
         st.warning("未找到该单词，请检查拼写。")
 else:
-    st.info("请输入一个单词进行查询。")
+    st.info("请选择或输入一个单词进行查询。")
