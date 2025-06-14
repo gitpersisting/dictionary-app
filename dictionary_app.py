@@ -3,7 +3,7 @@ import sqlite3
 import json
 
 st.set_page_config(page_title="词典查询", page_icon="📚", layout="wide")
-st.title("📖 英语词典查询工具")
+st.title("📖 冰山词源")
 
 # 从数据库读取所有单词（用于下拉自动联想）
 @st.cache_data
