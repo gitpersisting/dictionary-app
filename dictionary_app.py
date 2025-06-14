@@ -5,32 +5,46 @@ import json
 st.set_page_config(page_title="词典查询", page_icon="📚", layout="wide")
 st.title("📖 英语词典查询工具")
 
-# 从数据库读取所有单词（仅加载一次）
+# 从数据库加载所有单词
 @st.cache_data
 def load_word_list():
     conn = sqlite3.connect("output.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT word FROM dictionary")
+    cursor.execute("SELECT word FROM dictionary ORDER BY word")
     rows = cursor.fetchall()
     conn.close()
     return [r[0] for r in rows]
 
 all_words = load_word_list()
 
-# 文本输入 + 动态过滤
-user_input = st.text_input("请输入单词前缀以联想：")
+# 用户输入关键词（不是 selectbox）
+input_text = st.text_input("🔎 输入单词开头进行联想搜索：")
 
-# 获取匹配词（最多5条）
-matches = []
-if user_input:
-    matches = [w for w in all_words if w.lower().startswith(user_input.lower())][:5]
+# 匹配前缀（忽略大小写）
+suggestions = [w for w in all_words if w.lower().startswith(input_text.lower())] if input_text else []
+suggestions = suggestions[:10]  # 限制最多展示10个
 
-# 提示用户选择匹配项
 selected_word = None
-if matches:
-    selected_word = st.selectbox("从联想结果中选择：", matches)
+
+# 如果有建议词，展示为双列按钮
+if suggestions:
+    st.markdown("### 🧠 联想词建议（点击查询）：")
+    col1, col2 = st.columns(2)
+    for i in range(5):
+        left = suggestions[i] if i < len(suggestions) else None
+        right = suggestions[i + 5] if i + 5 < len(suggestions) else None
+        with col1:
+            if left and st.button(f"👉 {left}", key=f"sug_left_{i}"):
+                selected_word = left
+        with col2:
+            if right and st.button(f"👉 {right}", key=f"sug_right_{i}"):
+                selected_word = right
+
+# 如果用户点击了建议词，则进行查询
+if selected_word:
+    word = selected_word
 else:
-    st.info("请输入至少一个字母以开始联想（最多显示5条匹配）")
+    word = None
 
 # 查询数据库
 def query_word(w):
@@ -41,9 +55,9 @@ def query_word(w):
     conn.close()
     return row
 
-# 显示查询结果
-if selected_word:
-    result = query_word(selected_word)
+# 查询结果展示
+if word:
+    result = query_word(word)
     if result:
         (
             word, pron_uk, pron_us, meanings, etym_full,
@@ -71,18 +85,11 @@ if selected_word:
         try:
             examples_en_list = json.loads(examples_en)
             examples_zh_list = json.loads(examples_zh)
-
-            for i, (en, zh) in enumerate(zip(examples_en_list, examples_zh_list), start=1):
-                en_clean = en.strip().lstrip("1234567890. ").strip()
-                zh_clean = zh.strip()
-
-                if zh_clean == en_clean or en_clean in zh_clean:
-                    zh_clean = ""
-
-                st.markdown(f"**{i}.** {en_clean}")
-                if zh_clean:
-                    st.markdown(f"　👉 {zh_clean}")
+            for en, zh in zip(examples_en_list, examples_zh_list):
+                st.markdown(f"- {en}  \n　👉 {zh}")
         except:
             st.markdown("例句格式错误")
     else:
         st.warning("未找到该单词，请检查拼写。")
+elif input_text:
+    st.info("请选择上方建议词进行查询。")
