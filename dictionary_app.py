@@ -1,9 +1,10 @@
+
 import streamlit as st
 import sqlite3
 import json
 
 st.set_page_config(page_title="词典查询", page_icon="📚", layout="wide")
-st.title("📖 冰山词源")
+st.title("📖 英语词典查询工具")
 
 # 从数据库读取所有单词（用于下拉自动联想）
 @st.cache_data
@@ -15,9 +16,18 @@ def load_word_list():
     conn.close()
     return [r[0] for r in rows]
 
-# 词汇联想下拉框
+# 词汇联想下拉框（双列）
 all_words = load_word_list()
-word = st.selectbox("请输入或选择单词（支持自动联想）", all_words)
+col1, col2 = st.columns(2)
+
+with col1:
+    word1 = st.selectbox("🔎 单词搜索框 1", all_words, key="box1")
+
+with col2:
+    word2 = st.selectbox("🔎 单词搜索框 2", all_words, key="box2")
+
+# 你可以修改为从 word2 读取，或添加逻辑判断
+word = word1
 
 # 查询函数
 def query_word(w):
