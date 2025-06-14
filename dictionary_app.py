@@ -48,8 +48,7 @@ if word:
             examples_en_list = json.loads(examples_en)
             examples_zh_list = json.loads(examples_zh)
             for en, zh in zip(examples_en_list, examples_zh_list):
-                st.markdown(f"- {en}  
-　👉 {zh}")
+                st.markdown(f"- {en}  \n 👉 {zh}")
         except:
             st.markdown("例句格式错误")
     else:
