@@ -5,34 +5,21 @@ import json
 st.set_page_config(page_title="词典查询", page_icon="📚", layout="wide")
 st.title("📖 英语词典查询工具")
 
-# 从数据库读取所有单词（仅加载一次）
+# 从数据库读取所有单词（用于下拉自动联想）
 @st.cache_data
 def load_word_list():
     conn = sqlite3.connect("output.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT word FROM dictionary")
+    cursor.execute("SELECT word FROM dictionary ORDER BY word")
     rows = cursor.fetchall()
     conn.close()
     return [r[0] for r in rows]
 
+# 联想搜索框（单列、带下拉建议）
 all_words = load_word_list()
+word = st.selectbox("请输入或选择单词（支持自动联想）", all_words)
 
-# 文本输入 + 动态过滤
-user_input = st.text_input("请输入单词前缀以联想：")
-
-# 获取匹配词（最多5条）
-matches = []
-if user_input:
-    matches = [w for w in all_words if w.lower().startswith(user_input.lower())][:5]
-
-# 提示用户选择匹配项
-selected_word = None
-if matches:
-    selected_word = st.selectbox("从联想结果中选择：", matches)
-else:
-    st.info("请输入至少一个字母以开始联想（最多显示5条匹配）")
-
-# 查询数据库
+# 查询数据库函数
 def query_word(w):
     conn = sqlite3.connect("output.db")
     cursor = conn.cursor()
@@ -41,9 +28,9 @@ def query_word(w):
     conn.close()
     return row
 
-# 显示查询结果
-if selected_word:
-    result = query_word(selected_word)
+# 查询结果展示
+if word:
+    result = query_word(word)
     if result:
         (
             word, pron_uk, pron_us, meanings, etym_full,
@@ -75,3 +62,5 @@ if selected_word:
                 st.markdown(f"- {en}  \n　👉 {zh}")
         except:
             st.markdown("例句格式错误")
+    else:
+        st.warning("未找到该单词，请检查拼写。")
