@@ -5,7 +5,7 @@ import json
 st.set_page_config(page_title="词典查询", page_icon="📚", layout="wide")
 st.title("📖 英语词典查询工具")
 
-# 从数据库读取所有单词（用于下拉自动联想）
+# 从数据库读取所有单词（用于联想）
 @st.cache_data
 def load_word_list():
     conn = sqlite3.connect("output.db")
@@ -15,7 +15,7 @@ def load_word_list():
     conn.close()
     return [r[0] for r in rows]
 
-# 联想下拉框（单列）
+# 联想搜索框
 all_words = load_word_list()
 word = st.selectbox("🔎 请选择或输入单词（支持自动联想）", all_words)
 
@@ -44,14 +44,15 @@ if word:
 
         st.markdown("### 🧬 词源")
         st.markdown(f"**简述**：{etym_origin}")
-        with st.expander("🔍 查看详细词源结构"):
-            st.markdown(etym_full)
-            try:
-                parts = json.loads(etym_parts)
-                for p in parts:
-                    st.markdown(f"- `{p.get('part')}`：{p.get('meaning')}  ({p.get('origin')})")
-            except:
-                st.markdown("（词源结构数据解析失败）")
+
+        st.markdown("#### 📖 详细词源结构")
+        st.markdown(etym_full)
+        try:
+            parts = json.loads(etym_parts)
+            for p in parts:
+                st.markdown(f"- `{p.get('part')}`：{p.get('meaning')}  ({p.get('origin')})")
+        except:
+            st.markdown("（词源结构数据解析失败）")
 
         st.markdown("### 💬 例句")
         try:
