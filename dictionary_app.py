@@ -1,4 +1,3 @@
-
 import streamlit as st
 import sqlite3
 import json
@@ -16,18 +15,9 @@ def load_word_list():
     conn.close()
     return [r[0] for r in rows]
 
-# 词汇联想下拉框（双列）
+# 联想下拉框（单列）
 all_words = load_word_list()
-col1, col2 = st.columns(2)
-
-with col1:
-    word1 = st.selectbox("🔎 单词搜索框 1", all_words, key="box1")
-
-with col2:
-    word2 = st.selectbox("🔎 单词搜索框 2", all_words, key="box2")
-
-# 你可以修改为从 word2 读取，或添加逻辑判断
-word = word1
+word = st.selectbox("🔎 请选择或输入单词（支持自动联想）", all_words)
 
 # 查询函数
 def query_word(w):
@@ -67,11 +57,18 @@ if word:
         try:
             examples_en_list = json.loads(examples_en)
             examples_zh_list = json.loads(examples_zh)
-            for en, zh in zip(examples_en_list, examples_zh_list):
-                st.markdown(f"- {en}  \n　👉 {zh}")
+
+            for i, (en, zh) in enumerate(zip(examples_en_list, examples_zh_list), start=1):
+                en_clean = en.strip().lstrip("1234567890. ").strip()
+                zh_clean = zh.strip()
+
+                if zh_clean == en_clean or en_clean in zh_clean:
+                    zh_clean = ""
+
+                st.markdown(f"**{i}.** {en_clean}")
+                if zh_clean:
+                    st.markdown(f"　👉 {zh_clean}")
         except:
             st.markdown("例句格式错误")
     else:
         st.warning("未找到该单词，请检查拼写。")
-else:
-    st.info("请选择或输入一个单词进行查询。")
